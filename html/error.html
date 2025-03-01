@@ -1,61 +1,205 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>错误 - <!--# echo var="status" --></title>
+    <title>Error - <!--# echo var="status" --></title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
+        :root {
+            --primary-color: #4361ee;
+            --error-color: #ef476f;
+            --text-color: #2b2d42;
+            --text-light: #6c757d;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --border-radius: 12px;
+            --box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            --transition: all 0.3s ease;
+        }
+        
+        * {
             margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
             padding: 20px;
-            color: #333;
-            max-width: 800px;
-            margin: 0 auto;
-            text-align: center;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(216, 241, 230, 0.46) 0%, rgba(233, 226, 226, 0.28) 90.1%);
         }
+        
         .error-container {
-            background-color: #f9f9f9;
-            border-radius: 5px;
-            padding: 40px 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-top: 50px;
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 40px 30px;
+            box-shadow: var(--box-shadow);
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
         }
+        
+        .error-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            background: linear-gradient(90deg, var(--error-color), var(--primary-color));
+        }
+        
+        .error-icon {
+            font-size: 60px;
+            color: var(--error-color);
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+        
         .error-code {
             font-size: 72px;
-            color: #e74c3c;
+            color: var(--error-color);
             margin: 0;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 10px;
         }
+        
         .error-message {
-            font-size: 24px;
-            color: #2c3e50;
-            margin: 20px 0;
+            font-size: 28px;
+            color: var(--text-color);
+            margin: 15px 0;
+            font-weight: 600;
         }
+        
         .error-description {
-            color: #7f8c8d;
+            color: var(--text-light);
             margin-bottom: 30px;
+            font-size: 18px;
         }
+        
         .back-button {
-            display: inline-block;
-            background-color: #3498db;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--primary-color);
             color: white;
-            padding: 10px 20px;
+            padding: 12px 24px;
             text-decoration: none;
-            border-radius: 4px;
-            transition: background-color 0.3s;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: var(--transition);
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
         }
+        
         .back-button:hover {
-            background-color: #2980b9;
+            background-color: #3051d3;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
+        }
+        
+        .back-button i {
+            margin-right: 8px;
+        }
+        
+        .error-details {
+            margin: 30px auto;
+            text-align: left;
+            max-width: 600px;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            color: var(--text-light);
+            border-left: 4px solid var(--error-color);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            transition: var(--transition);
+        }
+        
+        .error-details:hover {
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+        }
+        
+        .error-details p {
+            margin: 8px 0;
+            display: flex;
+            align-items: baseline;
+        }
+        
+        .error-details strong {
+            min-width: 120px;
+            color: var(--text-color);
+            display: inline-block;
+        }
+        
+        .error-details-title {
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: var(--text-color);
+            text-align: center;
+            font-size: 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .error-code {
+                font-size: 60px;
+            }
+            .error-message {
+                font-size: 22px;
+            }
+            .error-details strong {
+                min-width: 100px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="error-container">
+        <div class="error-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
         <h1 class="error-code"><!--# echo var="status" --></h1>
         <h2 class="error-message"><!--# echo var="status_text" --></h2>
-        <p class="error-description">很抱歉，您请求的页面出现了错误。</p>
-        <a href="/" class="back-button">返回首页</a>
+        <p class="error-description">We're sorry, but the page you requested encountered an error. Our technical team has been notified.</p>
+        
+        <div class="error-details">
+            <p class="error-details-title"><i class="fas fa-info-circle"></i> Error Details</p>
+            <p><strong>Error Code:</strong> <span><!--# echo var="status" --></span></p>
+            <p><strong>Error Message:</strong> <span><!--# echo var="status_text" --></span></p>
+            <p><strong>Request Method:</strong> <span><!--# echo var="request_method" --></span></p>
+            <p><strong>Request URL:</strong> <span><!--# echo var="request_uri" --></span></p>
+            <p><strong>Source IP:</strong> <span><!--# echo var="remote_addr" --></span></p>
+            <p><strong>Time:</strong> <span><!--# echo var="time_local" --></span></p>
+        </div>
+        
+        <a href="/" class="back-button"><i class="fas fa-home"></i> Back to Home</a>
     </div>
 </body>
 </html> 

@@ -1,2 +1,5 @@
 {
+    "chat.editor.fontSize": 18,
+    "files.trimFinalNewlines": true,
+    "files.trimTrailingWhitespace": true
 }

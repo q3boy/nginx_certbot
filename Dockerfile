@@ -26,16 +26,26 @@ RUN mkdir -p /var/www/certbot \
     && mkdir -p /etc/nginx/conf.d \
     && mkdir -p /etc/letsencrypt \
     && mkdir -p /var/lib/letsencrypt \
-    && mkdir -p /var/www/html
-
-# 复制配置文件
-COPY ./nginx.conf /etc/nginx/nginx.conf
-COPY ./conf.d/ /etc/nginx/conf.d/
-COPY ./scripts/ /scripts/
-COPY ./html/ /var/www/html/
+    && mkdir -p /var/www/html \
+    && mkdir -p /var/www/favicon
 
 # 设置日志轮询配置
 COPY ./scripts/logrotate-nginx.conf /etc/logrotate.d/nginx
+
+# 复制html文件
+COPY ./html/ /var/www/html/
+
+# 复制favicon文件
+COPY ./nginx/favicon/ /var/www/favicon/
+
+# 复制配置文件
+COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
+COPY ./nginx/env.conf.template /etc/nginx/env.conf.template
+COPY ./nginx/conf.d/ /etc/nginx/conf.d/
+
+
+# 复制脚本
+COPY ./scripts/ /scripts/
 
 # 设置权限
 RUN chmod +x /scripts/*.sh
@@ -44,4 +54,4 @@ RUN chmod +x /scripts/*.sh
 EXPOSE 80 443
 
 # 启动脚本
-CMD ["/scripts/entrypoint.sh"] 
+CMD ["/scripts/entrypoint.sh"]
