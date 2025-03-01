@@ -7,7 +7,7 @@ ENV LC_ALL=en_US.UTF-8
 ENV DOMAINS=www.example.com
 ENV EMAIL=admin@example.com
 ENV STAGING=1
-ENV RSA_KEY_SIZE=4096
+ENV SELF_SIGNED_KEY_SIZE=4096
 
 # 安装必要的软件包
 RUN apk add --no-cache \

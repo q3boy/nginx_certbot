@@ -7,7 +7,7 @@ sleep 5
 # 定义域名变量（从环境变量获取，默认为example.com）
 DOMAINS=${DOMAINS:-"example.com www.example.com"}
 EMAIL=${EMAIL:-"admin@example.com"}
-RSA_KEY_SIZE=${RSA_KEY_SIZE:-4096}
+SELF_SIGNED_KEY_SIZE=${SELF_SIGNED_KEY_SIZE:-4096}
 STAGING=${STAGING:-0}
 
 # 首次运行时尝试获取证书
@@ -30,7 +30,7 @@ if [ ! -d "/etc/letsencrypt/live/$DOMAINS" ] || [ ! -f "/etc/letsencrypt/live/$D
         $staging_arg \
         $domain_args \
         --email $EMAIL \
-        --rsa-key-size $RSA_KEY_SIZE \
+        --rsa-key-size $SELF_SIGNED_KEY_SIZE \
         --agree-tos \
         --force-renewal \
         --non-interactive
