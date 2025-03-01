@@ -1,0 +1,52 @@
+# 版本控制相关
+.git
+.gitignore
+.github
+
+# 编辑器配置
+.vscode
+.idea
+*.swp
+*.swo
+
+# 环境变量和敏感信息
+.env
+.env.*
+!.env.example
+
+# 日志文件
+*.log
+logs/
+
+# 临时文件
+tmp/
+temp/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 文档和其他不需要的文件
+README.md
+LICENSE
+*.md
+docs/
+
+# 开发和测试文件
+tests/
+test/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Docker相关
+docker-compose*.yml
+docker-compose*.yaml
+.dockerignore
+
+# 备份文件
+*.bak
+*.backup
+*~
