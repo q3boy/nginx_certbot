@@ -28,8 +28,6 @@ RUN mkdir -p /var/www/certbot \
     && mkdir -p /var/www/html \
     && mkdir -p /var/www/favicon
 
-# 设置日志轮询配置
-COPY ./scripts/logrotate-nginx.conf /etc/logrotate.d/nginx
 
 # 复制html文件
 COPY ./html/ /var/www/html/
@@ -37,17 +35,17 @@ COPY ./html/ /var/www/html/
 # 复制favicon文件
 COPY ./nginx/favicon/ /var/www/favicon/
 
-# 复制配置文件
-COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
-COPY ./nginx/env.conf.template /etc/nginx/env.conf.template
-COPY ./nginx/conf.d/ /etc/nginx/conf.d/
-
-
 # 复制脚本
 COPY ./scripts/ /scripts/
 
 # 设置权限
 RUN chmod +x /scripts/*.sh
+
+# 复制配置文件
+COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
+COPY ./nginx/env.conf.template /etc/nginx/env.conf.template
+COPY ./nginx/conf.d/ /etc/nginx/conf.d/
+
 
 # 暴露端口
 EXPOSE 80 443

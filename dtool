@@ -13,7 +13,7 @@ show_help() {
     echo ""
     echo "命令:"
     echo "  build [版本号]                构建镜像并设置版本号标签 (默认: 1.0.0)"
-    echo "  tag [源标签] [目标标签]        为指定版本号的镜像设置新标签 (默认: 最新版本->lastest)"
+    echo "  tag [源标签] [目标标签]        为指定版本号的镜像设置新标签 (默认: 最新版本->latest)"
     echo "  run [标签]                    创建并运行容器 (默认: 最新版本)"
     echo "  clean                        删除所有无标签的镜像"
     echo "  exec [容器名]                 以交互式方式进入容器并执行bash (默认: ngce)"
@@ -59,12 +59,12 @@ parse_args() {
             build_image "$VERSION"
             ;;
         tag)
-            SOURCE_TAG="${1:-$(get_lastest_version)}"
-            TARGET_TAG="${2:-lastest}"
+            SOURCE_TAG="${1:-$(get_latest_version)}"
+            TARGET_TAG="${2:-latest}"
             tag_image "$SOURCE_TAG" "$TARGET_TAG"
             ;;
         run)
-            TAG="${1:-$(get_lastest_version)}"
+            TAG="${1:-$(get_latest_version)}"
             run_container "$TAG"
             ;;
         clean)
@@ -96,12 +96,12 @@ parse_args() {
 }
 
 # 获取最新版本
-get_lastest_version() {
-    local lastest_version=$(docker images "$IMAGE_NAME" --format "{{.Tag}}" | grep -v "lastest" | sort -V | tail -n 1)
-    if [[ -z "$lastest_version" ]]; then
+get_latest_version() {
+    local latest_version=$(docker images "$IMAGE_NAME" --format "{{.Tag}}" | grep -v "latest" | sort -V | tail -n 1)
+    if [[ -z "$latest_version" ]]; then
         echo "1.0.0"
     else
-        echo "$lastest_version"
+        echo "$latest_version"
     fi
 }
 
