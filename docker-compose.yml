@@ -1,24 +1,31 @@
 version: '3.8'
 
+# 默认日志配置，限制日志大小和数量，防止磁盘占用过大
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "50m"    # 单个日志文件最大 50MB
+    max-file: "3"      # 保留最近 3 个日志文件
+
 services:
-  n8n:
-    image: busybox:latest
-    container_name: n8n
-    restart: unless-stopped
-    command: ["tail", "-f", "/dev/null"]
-    networks:
-      - frontend
-      - backend
+  #############################################################
+  # 占位服务 - 用于反向代理的目标服务
+  #############################################################
+
+  # frps服务 - 使用busybox作为占位服务
   frps:
     image: busybox:latest
     container_name: frps
+    restart: unless-stopped    # 确保服务始终运行
     ports:
-      - "7000:7000"              # frp 客户端TCP连接端口，需要外部访问
-      - "7000:7000/udp"          # KCP协议端口（UDP），直接暴露，不经过Nginx    restart: unless-stopped
+      - "7000:7000"            # frp 客户端TCP连接端口，需要外部访问
+      - "7000:7000/udp"        # KCP协议端口（UDP），直接暴露，不经过Nginx
     command: ["tail", "-f", "/dev/null"]
     networks:
-      - frontend
-      - backend
+      - frontend               # 用于外部访问
+      - backend                # 用于内部通信
+
+  # ntfy服务 - 使用busybox作为占位符
   ntfy:
     image: busybox:latest
     container_name: ntfy
@@ -27,6 +34,12 @@ services:
     networks:
       - frontend
       - backend
+
+  #############################################################
+  # 核心服务 - Nginx与Certbot集成
+  #############################################################
+
+  # Nginx与Certbot集成服务 - 处理SSL证书和反向代理
   nginx-certbot:
     image: nginx-certbot:latest
     build:
@@ -34,46 +47,203 @@ services:
       dockerfile: Dockerfile
     container_name: nginx-certbot
     ports:
-      - "80:80"
-      - "443:443"
+      - "80:80"                # HTTP端口，用于证书验证和HTTP重定向
+      - "443:443"              # HTTPS端口，提供加密访问
     volumes:
-      - certbot-conf:/etc/letsencrypt
-      - certbot-lib:/var/lib/letsencrypt
-      - certbot-www:/var/www/certbot
-      - nginx-logs:/var/log/nginx
+      - certbot-conf:/etc/letsencrypt       # 存储Let's Encrypt证书和配置
+      - certbot-lib:/var/lib/letsencrypt    # 存储Let's Encrypt库文件
+      - certbot-www:/var/www/certbot        # 存储Certbot验证文件
+      - nginx-logs:/var/log/nginx           # 存储Nginx日志
     environment:
-      - DOMAINS=www.example.com n8n.example.com ntfy.example.com frps.example.com # 替换为您的域名
-      - EMAIL=admin@example.com # 替换为您的邮箱
-      - STAGING=0 # 设置为1可使用Let's Encrypt的测试环境
-      - MAIN_DOMAIN=www.example.com
-      - N8N_DOMAIN=n8n.example.com
-      - NTFY_DOMAIN=ntfy.example.com
-      - FRPS_DOMAIN=frps.example.com
-      - N8N_PORT=5678
-      - NTFY_PORT=8080
-      - FRPS_ADMIN_PORT=7500
-      - FRPS_HTTP_PORT=8080
-      - FRPS_HTTPS_PORT=8443
+      # 基本设置
+      - TZ=${TZ}       # 设置时区
+      - COMPOSE=1              # 标记为Compose环境，禁用开发环境特定设置
+
+      # 证书设置
+      - EMAIL=${EMAIL}         # Let's Encrypt通知邮箱
+      - STAGING=${STAGING}     # 设置为1可使用Let's Encrypt的测试环境
+      - SELF_SIGNED_KEY_SIZE=${SELF_SIGNED_KEY_SIZE}  # 自签名证书密钥大小
+
+      # 域名设置
+      - MAIN_DOMAIN=${MAIN_DOMAIN}
+      - N8N_DOMAIN=${N8N_DOMAIN}
+      - NTFY_DOMAIN=${NTFY_DOMAIN}
+      - FRPS_DOMAIN=${FRPS_DOMAIN}
+
+      # 端口设置
+      - N8N_PORT=${N8N_PORT}
+      - NTFY_PORT=${NTFY_PORT}
+      - FRPS_ADMIN_PORT=${FRPS_ADMIN_PORT}
+      - FRPS_HTTP_PORT=${FRPS_HTTP_PORT}
+      - FRPS_HTTPS_PORT=${FRPS_HTTPS_PORT}
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'          # 反向代理 CPU 需求适中
+          memory: 512M         # nginx 内存需求小
+        reservations:
+          cpus: '0.1'          # 最小 CPU 保证
+          memory: 128M         # 基本内存预留
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]    # 检查Nginx配置是否有效
+      interval: 60s            # 延长检查间隔，因为配置不会经常变化
+      timeout: 3s              # nginx 配置检查通常很快
+      retries: 3               # 重试次数
+      start_period: 10s        # 启动缓冲时间
 
+  #############################################################
+  # 应用服务 - n8n工作流自动化平台
+  #############################################################
+
+  n8n:
+    image: n8nio/n8n
+    container_name: n8n
+    restart: unless-stopped
+    networks:
+      - frontend               # 用于外部访问
+      - backend                # 用于数据库连接
+    environment:
+      - TZ=${TZ}       # 设置时区
+
+      # 认证配置 - 基本身份验证
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_AUTH_USER}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_AUTH_PASSWORD}
+
+      # URL配置 - 外部访问地址设置
+      - N8N_HOST=${N8N_DOMAIN}
+      - N8N_PROTOCOL=https
+      - WEBHOOK_TUNNEL_URL=https://${N8N_DOMAIN}
+      - WEBHOOK_URL=https://${N8N_DOMAIN}
+      - N8N_EXTERNAL_URL=https://${N8N_DOMAIN}
+
+      # 数据库配置 - PostgreSQL 连接设置
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_DATABASE=${POSTGRES_DB}
+      - DB_POSTGRESDB_USER=${POSTGRES_USER}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+
+      # 执行配置 - 工作流运行相关设置
+      - EXECUTIONS_MODE=regular
+      - NODE_FUNCTION_ALLOW_EXTERNAL=nodemailer
+      - N8N_PUSH_BACKEND=websocket           # 使用 websocket 进行实时通信
+      - N8N_PAYLOAD_SIZE_MAX=268435456      # 最大负载大小：256MB
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+
+      # 数据清理配置 - 自动清理过期数据
+      - EXECUTIONS_DATA_PRUNE=true          # 启用自动清理
+      - EXECUTIONS_DATA_MAX_AGE=168         # 保留最近 168 小时（7天）的数据
+      - EXECUTIONS_DATA_PRUNE_MAX_COUNT=2000 # 每次最多清理 2000 条记录
+    volumes:
+      - n8n_data:/home/node/.n8n            # 持久化数据存储
+    depends_on:
+      postgres:
+        condition: service_healthy               # 等待数据库就绪
+      # ntfy:
+      #   condition: service_started              # 等待通知服务启动
+    deploy:
+      resources:
+        limits:
+          cpus: '1.2'          # 主要服务，允许使用更多 CPU
+          memory: 3G           # 工作流运行需要足够内存
+        reservations:
+          cpus: '0.8'          # 保证基本资源
+          memory: 1G           # 预留足够内存确保稳定性
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:${N8N_PORT}/healthz"]  # 健康检查端点
+      interval: 20s            # 降低检查频率，减少资源消耗
+      timeout: 5s              # 缩短超时时间，快速发现问题
+      retries: 3               # 保持重试次数
+      start_period: 60s        # 增加启动缓冲时间，确保服务完全就绪
+
+  #############################################################
+  # 数据库服务 - PostgreSQL 用于 n8n 的持久化存储
+  #############################################################
+
+  postgres:
+    image: postgres:latest
+    container_name: pgsql
+    restart: unless-stopped
+    shm_size: 128mb            # 共享内存大小，提高性能
+    networks:
+      - backend                # 仅内部网络可访问，提高安全性
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - TZ=${TZ}       # 设置时区
+    volumes:
+      - pgsql_data:/var/lib/postgresql/data  # 数据持久化
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'          # 数据库操作通常不太消耗 CPU
+          memory: 1.5G         # 数据库需要稳定的内存
+        reservations:
+          cpus: '0.2'          # 保证基本 CPU 资源
+          memory: 512M         # 预留足够内存确保性能
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} || exit 1"]  # 检查数据库连接
+      interval: 15s            # 数据库检查可以更频繁
+      timeout: 3s              # 数据库响应应该很快
+      retries: 5               # 增加重试次数，确保可靠性
+      start_period: 30s        # 数据库启动需要一定时间
+
+  #############################################################
+  # 辅助服务 - 用于访问和管理卷数据
+  #############################################################
+
+  dummy:
+    image: busybox:latest
+    container_name: dummy
+    restart: unless-stopped
+    command: ["tail", "-f", "/dev/null"]
+    networks:
+      - frontend
+      - backend
+    volumes:
+      # 挂载所有卷，方便管理和备份
+      - certbot-conf:/volumes/certbot-conf
+      - certbot-lib:/volumes/certbot-lib
+      - certbot-www:/volumes/certbot-www
+      - nginx-logs:/volumes/nginx-logs
+      - n8n_data:/volumes/n8n_data
+      - pgsql_data:/volumes/pgsql_data
+
+#############################################################
+# 持久化卷定义
+#############################################################
 volumes:
-  certbot-conf:
-  certbot-lib:
-  certbot-www:
-  nginx-logs:
+  certbot-conf:                # 存储Let's Encrypt证书和配置
+  certbot-lib:                 # 存储Let's Encrypt库文件
+  certbot-www:                 # 存储Certbot验证文件
+  nginx-logs:                  # 存储Nginx日志
+  n8n_data:                    # 存储n8n数据
+  pgsql_data:                  # 存储PostgreSQL数据
 
+#############################################################
+# 网络定义
+#############################################################
 networks:
+  # 前端网络 - 用于外部访问
   frontend:
     name: frontend
     driver: bridge
     ipam:
       driver: default
       config:
-        - subnet: 172.20.0.0/16
+        - subnet: 172.20.0.0/16  # 前端网络地址段
+
+  # 后端网络 - 仅内部服务可访问
   backend:
     name: backend
     driver: bridge
-    internal: true
+    internal: true             # 内部网络，不暴露到外部
     ipam:
       driver: default
       config:

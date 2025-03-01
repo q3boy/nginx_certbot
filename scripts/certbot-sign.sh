@@ -4,8 +4,7 @@ set -e
 # 等待Nginx启动
 sleep 10
 
-# 定义域名变量（从环境变量获取，默认为example.com）
-DOMAINS=${DOMAINS:-"example.com www.example.com"}
+DOMAINS="${MAIN_DOMAIN} ${N8N_DOMAIN} ${NTFY_DOMAIN} ${FRPS_DOMAIN}"
 EMAIL=${EMAIL:-"admin@example.com"}
 SELF_SIGNED_KEY_SIZE=${SELF_SIGNED_KEY_SIZE:-4096}
 STAGING=${STAGING:-0}

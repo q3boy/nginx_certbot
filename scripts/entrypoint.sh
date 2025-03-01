@@ -65,8 +65,13 @@ echo "0 */12 * * * /scripts/certbot-renew.sh" >> /etc/crontabs/root
 # 启动cron服务
 crond
 
-# 临时命令 后期必须删除 @FIXME
-echo "127.0.0.1 n8n frps ntfy" >> /etc/hosts
+
+# 仅在没有COMPOSE环境变量时执行
+if [ -z "$COMPOSE" ]; then
+    # 通过docker run 启动时，添加本地域名解析，方便本地测试
+    echo "添加本地域名解析（仅在非COMPOSE环境下执行）..."
+    echo "127.0.0.1 n8n frps ntfy" >> /etc/hosts
+fi
 
 # 首次运行证书获取脚本
 echo "首次运行证书获取脚本..."

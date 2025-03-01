@@ -4,7 +4,6 @@ ENV TZ=Asia/Shanghai
 ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US:en
 ENV LC_ALL=en_US.UTF-8
-ENV DOMAINS=www.example.com
 ENV EMAIL=admin@example.com
 ENV STAGING=1
 ENV SELF_SIGNED_KEY_SIZE=4096
